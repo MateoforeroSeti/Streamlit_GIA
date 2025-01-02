@@ -1,0 +1,8 @@
+streamlit
+joblib
+pandas
+nltk
+unidecode
+scikit-learn
+NLTK
+spacy

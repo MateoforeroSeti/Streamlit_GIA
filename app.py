@@ -241,7 +241,7 @@ def main():
 
                 # Crear el modelo de Random Forest
                 rf_model = RandomForestClassifier(
-                    n_estimators=170,  # Número de árboles
+                    n_estimators=100,  # Número de árboles
                     max_depth=None,    # Profundidad máxima de los árboles (None para sin límite)
                     random_state=17    # Reproducibilidad
                 )
@@ -256,8 +256,8 @@ def main():
                 mse = mean_squared_error(y_test, y_pred)
                 r2 = r2_score(y_test, y_pred)
 
-                joblib.dump(rf_model, 'rf_model.pkl')
-                
+                joblib.dump(rf_model, 'rf_model.pkl', compress=3)
+
                 st.success(f"Mean Squared Error (MSE): {mse:.2f}")
 
                 st.success(f"R-squared (R²): {r2:.2f}")
