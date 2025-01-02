@@ -1,3 +1,4 @@
+python -m spacy download es_core_news_sm
 # Resto de tu código
 import streamlit as st
 
