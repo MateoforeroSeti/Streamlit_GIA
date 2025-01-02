@@ -30,6 +30,9 @@ nltk.download('punkt')
 nltk.download('punkt_tab')
 
 
+import os
+import subprocess
+
 model_name = "es_core_news_sm"
 try:
     nlp = spacy.load(model_name)
