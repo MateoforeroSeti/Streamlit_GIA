@@ -1,3 +1,4 @@
+import sys
 import spacy
 import subprocess
 
@@ -5,12 +6,11 @@ import subprocess
 model_name = "es_core_news_sm"
 
 try:
-    # Intenta cargar el modelo
     nlp = spacy.load(model_name)
 except OSError:
-    # Si no se encuentra, instalarlo dinámicamente
     print(f"Descargando e instalando el modelo {model_name}...")
-    subprocess.run(["python", "-m", "spacy", "download", model_name], check=True)
+    # Llamar al mismo ejecutable de Python usado en Streamlit
+    subprocess.run([sys.executable, "-m", "spacy", "download", model_name], check=True)
     nlp = spacy.load(model_name)
 # Resto de tu código
 import streamlit as st
