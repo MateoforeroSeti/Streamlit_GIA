@@ -6,4 +6,3 @@ unidecode
 scikit-learn
 NLTK
 spacy
-es_core_news_sm
