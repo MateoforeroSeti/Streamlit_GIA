@@ -1,5 +1,6 @@
-python -m spacy download es_core_news_sm
 
+
+# Resto de tu código
 import streamlit as st
 
 import pandas as pd
@@ -27,6 +28,18 @@ nltk.download('stopwords')
 nltk.download('cess_esp') 
 nltk.download('punkt') 
 nltk.download('punkt_tab')
+
+
+model_name = "es_core_news_sm"
+try:
+    nlp = spacy.load(model_name)
+except OSError:
+    # Descargar el modelo si no está disponible
+    print(f"Descargando el modelo {model_name}...")
+    subprocess.run(["python", "-m", "spacy", "download", model_name])
+    nlp = spacy.load(model_name)
+
+
 
 
 nlp = spacy.load("es_core_news_sm") 
