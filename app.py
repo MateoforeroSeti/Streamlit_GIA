@@ -135,6 +135,16 @@ def main():
             archivo_calculo = None  
             st.rerun()
 
+st.markdown("""
+    <script>
+    const button = window.parent.document.querySelector("button[data-testid='stButton-button_calc']");
+    if (button) {
+        button.setAttribute('id', 'button_calc');
+    }
+    </script>
+""", unsafe_allow_html=True)
+
+
 
 if __name__ == '__main__':
     main()
