@@ -13,15 +13,6 @@ from nltk.corpus import cess_esp
 
 from unidecode import unidecode 
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import StandardScaler
 
 import joblib
 #paquetes de espanol 
