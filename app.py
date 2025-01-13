@@ -128,6 +128,15 @@ def main():
 
         st.session_state.reinicio_archivo_calculo = True
 
+    st.markdown("""
+        <script>
+        const button = window.parent.document.querySelector("button[data-testid='stButton-button_calc']");
+        if (button) {
+            button.setAttribute('id', 'button_calc');
+        }
+        </script>
+    """, unsafe_allow_html=True)
+    
     if st.session_state.reinicio_archivo_calculo:
         if st.button("Reiniciar"):
             st.session_state.reinicio_archivo_calculo = False
@@ -135,14 +144,7 @@ def main():
             archivo_calculo = None  
             st.rerun()
 
-st.markdown("""
-    <script>
-    const button = window.parent.document.querySelector("button[data-testid='stButton-button_calc']");
-    if (button) {
-        button.setAttribute('id', 'button_calc');
-    }
-    </script>
-""", unsafe_allow_html=True)
+
 
 
 
