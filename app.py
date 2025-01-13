@@ -93,7 +93,7 @@ def main():
         
     archivo_calculo = st.file_uploader("Carga de archivo CSV", type=["csv"])
 
-    if st.button('Estimar Tiempo de Solución', key="button_calc"):
+    if st.button('Estimar Tiempo de Solución', key="button_calc", type="primary"):
 
         if archivo_calculo is not None:
             st.session_state.archivo_calculo = archivo_calculo
