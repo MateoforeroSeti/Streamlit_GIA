@@ -167,16 +167,6 @@ def main():
             st.success(classification_report(y_test, y_pred))
 
 
-            # Matriz de confusión
-            cm = confusion_matrix(y_test, y_pred)
-            fig, ax = plt.subplots(figsize=(3, 3))  # Crear una figura para la matriz de confusión
-            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y))
-            disp.plot(cmap=plt.cm.Blues, ax=ax, colorbar=False)
-            ax.set_title("Confusion Matrix")
-
-            # Mostrar figura en Streamlit
-            st.pyplot(fig)
-
 
             joblib.dump(rf_model, 'rf_model.pkl', compress=2)
                  
@@ -227,15 +217,6 @@ def main():
             st.success(classification_report(y2_test, y2_pred))
 
 
-            # Matriz de confusión
-            cm = confusion_matrix(y2_test, y2_pred)
-            fig, ax = plt.subplots(figsize=(3, 3))  # Crear una figura para la matriz de confusión
-            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y2))
-            disp.plot(cmap=plt.cm.Blues, ax=ax, colorbar=False)
-            ax.set_title("Confusion Matrix")
-
-            # Mostrar figura en Streamlit
-            st.pyplot(fig)
 
             joblib.dump(rf_model_GA, 'rf_model_GA.pkl', compress=2)
 
@@ -286,16 +267,6 @@ def main():
             st.success("\nClassification Report (Impacto):")
             st.success(classification_report(y3_test, y3_pred))
 
-
-            # Matriz de confusión
-            cm = confusion_matrix(y3_test, y3_pred)
-            fig, ax = plt.subplots(figsize=(3, 3))  # Crear una figura para la matriz de confusión
-            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y3))
-            disp.plot(cmap=plt.cm.Blues, ax=ax, colorbar=False)
-            ax.set_title("Confusion Matrix")
-
-            # Mostrar figura en Streamlit
-            st.pyplot(fig)
 
             joblib.dump(rf_model_IM, 'rf_model_IM.pkl', compress=2)
 
