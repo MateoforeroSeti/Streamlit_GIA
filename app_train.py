@@ -106,9 +106,8 @@ def main():
             df_filt = df_org[['TITULO','IMPACTO','TIEMPO_SOLUCION','GRUPO_ASIGNACION']]
             df_filt = df_filt.dropna(subset=['TIEMPO_SOLUCION']) 
             data_csv = pd.read_csv('train_data.csv', encoding='utf-8', delimiter=';', header=0)
-            df_full_mark = pd.concat([df_filt, data_csv]).drop_duplicates()        
-            df_full_mark.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
-            df_full = df_full_mark.drop(columns=['Load_Date'])
+            df_full = pd.concat([df_filt, data_csv]).drop_duplicates()        
+            df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
 
 
             titulos = df_full['TITULO']
