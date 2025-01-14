@@ -16,12 +16,12 @@ from unidecode import unidecode
 import matplotlib.pyplot as plt
 import numpy as np
 
+from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import mean_squared_error, r2_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import LabelEncoder
 
 import joblib
 #paquetes de espanol 
@@ -80,9 +80,24 @@ def preprocesar_texto(texto):
 
 
 def main():
+    model = joblib.load('rf_model.pkl')
+    scaler = joblib.load('scaler.pkl')
+    vectorizer = joblib.load('vectorizer.pkl')
 
     st.set_page_config(layout='wide')
     st.title("Estimación de tiempos [GIA]")
+
+    st.sidebar.markdown(
+        """
+        <style>
+        .sidebar .sidebar-content{
+            font-size: 52px
+        }
+        </style>
+        """,unsafe_allow_html=True
+    )
+
+    menu = st.sidebar.radio("Modo de uso", ["Calculo individual","Calculo por archivo","Reentrenamiento de modelo de prediccion"])
     
     if 'texto' not in st.session_state:
         st.session_state.texto = ''
@@ -93,194 +108,218 @@ def main():
     if 'reinicio_archivo_calculo' not in st.session_state:
         st.session_state.reinicio_archivo_calculo = False
 
+    if menu == "Calculo individual":
+        st.write("Ingresa los datos para predecir el tiempo según el modelo entrenado.")
+    
 
-    st.write("Ingresa los datos para reentrenar el modelo.")
-    archivo_re = st.file_uploader("Carga de archivo CSV", type=["csv"])
-    if st.button('Reentrenar'):
-        if archivo_re is not None:
+        user_input_org = st.text_input('Titulo', st.session_state.texto)
+        st.session_state.texto = user_input_org
 
-            df_org = pd.read_csv(archivo_re, encoding='utf-8', delimiter=';') 
-            df_filt = df_org[['TITULO','IMPACTO','TIEMPO_SOLUCION','GRUPO_ASIGNACION']]
-            df_filt = df_filt.dropna(subset=['TIEMPO_SOLUCION']) 
-            data_csv = pd.read_csv('train_data.csv', encoding='utf-8', delimiter=';', header=0)
-            df_full = pd.concat([df_filt, data_csv]).drop_duplicates()        
-            df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
+        if st.button('Estimar Tiempo Máximo de Solución'):
+            if user_input_org:
 
+                user_input = preprocesar_texto(user_input_org)
 
+                user_vector = vectorizer.transform([user_input])
+                df_titulos = pd.DataFrame(user_vector.toarray(), columns=vectorizer.get_feature_names_out())
 
-            titulos = df_full['TITULO']
+                #df_servicio = pd.DataFrame({"SERVICIO":[servicio]})
+                #datos_kluster = pd.concat([df_servicio, df_titulos],axis = 1)
 
-            titulos_prepocesados = [preprocesar_texto(tit) for tit in titulos]
+                scaled_vector = scaler.transform(df_titulos.select_dtypes(include=[float,int]))
 
-            vectorizer = TfidfVectorizer()
+                cluster = model.predict(scaled_vector)[0]
 
-            X = vectorizer.fit_transform(titulos_prepocesados)
+                st.success(f"El tiempo estimado de la tarea es de : {cluster} minutos")
+            else:
+                st.warning("Titulo no definido")
 
-            df_titulos = pd.DataFrame(X.toarray(),columns=vectorizer.get_feature_names_out(),index=df_full.index)
+            st.session_state.reinicio_titulo = True
 
-            scaler = StandardScaler()
-            df_normalizado = pd.DataFrame(scaler.fit_transform(df_titulos), columns=df_titulos.columns, index=df_titulos.index)
+        if st.session_state.reinicio_titulo:
+            if st.button("Reiniciar"):
+                st.session_state.reinicio_titulo = False
+                st.session_state.texto = ''
+                user_input_org = ''   
+                st.rerun()
 
-            joblib.dump(vectorizer, 'vectorizer.pkl')
-            joblib.dump(scaler, 'scaler.pkl')
 
-            df_B1 = pd.concat([df_full[['TIEMPO_SOLUCION']], df_normalizado], axis=1)
 
-            #print(df_B1)
+    elif menu == "Calculo por archivo":
+        st.write("Ingresa los datos para predecir el tiempo según el modelo entrenado.")
+        
+        archivo_calculo = st.file_uploader("Carga de archivo CSV", type=["csv"])
 
-            #print(preprocesar_texto("Los niños estaban jugando en el parque y viendo qué sucedía a su alrededor."))
+        if st.button('Estimar Tiempo de Solución'):
 
-            # Variables independientes (X) y dependientes (y)
-            X = df_B1.drop(columns=['TIEMPO_SOLUCION'])
+            if archivo_calculo is not None:
+                st.session_state.archivo_calculo = archivo_calculo
 
-            label_encoder = LabelEncoder()
-            df_B1['TIEMPO_SOLUCION'] = label_encoder.fit_transform(df_B1['TIEMPO_SOLUCION'])
-            joblib.dump(label_encoder, 'label_encoder.pkl')
+                df = pd.read_csv(archivo_calculo, encoding='utf-8', delimiter=',')     
+                datos_rf = df
+                titulos = datos_rf['Descripción'] 
+                documentos_procesados = [preprocesar_texto(doc) for doc in titulos]
+                X = vectorizer.transform(documentos_procesados)
+                df_titulos = pd.DataFrame(X.toarray(), columns=vectorizer.get_feature_names_out())
+                
+                df_normalizado = scaler.transform(df_titulos.select_dtypes(include=[float,int]))
+                tiempo_calc = model.predict(df_normalizado)
+                datos_rf['Tiempo_estimado']=tiempo_calc
+                #datos_filtrados['Tiempo_estimado']=datos_filtrados.groupby('K')['TIEMPO_SOLUCION'].transform(lambda x: int(x.mean()) if x.notna().any() else 450)
+                #datos_filtrados.to_csv('resultado.csv',index=False,sep='|')
+                csv = datos_rf.to_csv(index=False,sep=';')
 
-            y = df_B1['TIEMPO_SOLUCION']
 
-            print(y)
-            # Dividir los datos en conjuntos de entrenamiento y prueba
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=17)
+                st.dataframe(datos_rf, use_container_width=True)
 
-            # Crear el modelo de Random Forest
-            rf_model = RandomForestClassifier(
-                n_estimators=100,  # Número de árboles
-                max_depth=None,    # Profundidad máxima de los árboles (None para sin límite)
-                random_state=17    # Reproducibilidad
-            )
+                st.download_button(
+                    label="Descargar resultados",
+                    data=csv,
+                    file_name="datos.csv",
+                    mime="texto/csv"
+                )
 
-            # Entrenar el modelo
-            rf_model.fit(X_train, y_train)
+            else:
+                st.warning("Archivo no cargado")
 
-            # Realizar predicciones
-            y_pred = rf_model.predict(X_test)
 
-            # Evaluar el modelo
-            f1_macro = f1_score(y_test, y_pred, average='macro')  # Promedio ponderado
-            f1_weighted = f1_score(y_test, y_pred, average='weighted')  # Considerando clases desbalanceadas
+            st.session_state.reinicio_archivo_calculo = True
 
-            st.success(f"F1 Macro (Tiempo): {f1_macro:.2f}")
+        if st.session_state.reinicio_archivo_calculo:
+            if st.button("Reiniciar"):
+                st.session_state.reinicio_archivo_calculo = False
+                st.session_state.archivo_calculo = ''
+                archivo_calculo = None  
+                st.rerun()
 
-            st.success(f"F1 Weighted (Tiempo): {f1_weighted:.2f}")
-            st.success("\nClassification Report (Tiempo):")
-            st.success(classification_report(y_test, y_pred))
 
 
 
-            joblib.dump(rf_model, 'rf_model.pkl', compress=2)
-                 
-#######################################################################################################################################################
-  
-            #df_full = df_filt
 
-            df_B2 = pd.concat([df_full[['GRUPO_ASIGNACION']], df_normalizado], axis=1)
 
+    elif menu == "Reentrenamiento de modelo de prediccion":
+        st.write("Ingresa los datos para reentrenar el modelo.")
+        archivo_re = st.file_uploader("Carga de archivo CSV", type=["csv"])
+        if st.button('Reentrenar'):
+            if archivo_re is not None:
+                df_org = pd.read_csv(archivo_re, encoding='utf-8', delimiter=';') 
+                df_filt = df_org[['TITULO','IMPACTO','TIEMPO_SOLUCION']]
+                df_filt = df_filt.dropna(subset=['TIEMPO_SOLUCION']) 
+                data_csv = pd.read_csv('train_data.csv', encoding='utf-8', delimiter=';', header=0)
+                df_full = pd.concat([df_filt, data_csv]).drop_duplicates()
+                df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
 
-            #print(df_B1)
 
-            #print(preprocesar_texto("Los niños estaban jugando en el parque y viendo qué sucedía a su alrededor."))
+                titulos = df_full['TITULO']
 
-            # Variables independientes (X) y dependientes (y)
-            X2 = df_B2.drop(columns=['GRUPO_ASIGNACION'])
+                titulos_prepocesados = [preprocesar_texto(tit) for tit in titulos]
 
-            label_encoder_GA = LabelEncoder()
-            df_B2['GRUPO_ASIGNACION'] = label_encoder_GA.fit_transform(df_B2['GRUPO_ASIGNACION'])
-            joblib.dump(label_encoder_GA, 'label_encoder_GA.pkl')
+                vectorizer = TfidfVectorizer()
 
-            y2 = df_B2['GRUPO_ASIGNACION']
+                X = vectorizer.fit_transform(titulos_prepocesados)
 
-            # Dividir los datos en conjuntos de entrenamiento y prueba
-            X2_train, X2_test, y2_train, y2_test = train_test_split(X2, y2, test_size=0.1, random_state=27)
+                df_titulos = pd.DataFrame(X.toarray(),columns=vectorizer.get_feature_names_out(),index=df_full.index)
 
-            # Crear el modelo de Random Forest
-            rf_model_GA = RandomForestClassifier(
-                n_estimators=100,  # Número de árboles
-                max_depth=None,    # Profundidad máxima de los árboles (None para sin límite)
-                random_state=17    # Reproducibilidad
-            )
 
-            # Entrenar el modelo
-            rf_model_GA.fit(X2_train, y2_train)
+                scaler = StandardScaler()
+                df_normalizado = pd.DataFrame(scaler.fit_transform(df_titulos), columns=df_titulos.columns, index=df_titulos.index)
 
-            # Realizar predicciones
-            y2_pred = rf_model_GA.predict(X2_test)
+                df_B1 = pd.concat([df_full[['TIEMPO_SOLUCION']], df_normalizado], axis=1)
 
-            # Evaluar el modelo
-            f1_macro2 = f1_score(y2_test, y2_pred, average='macro')  # Promedio ponderado
-            f1_weighted2 = f1_score(y2_test, y2_pred, average='weighted')  # Considerando clases desbalanceadas
 
-            st.success(f"F1 Macro (Grupo): {f1_macro2:.2f}")
+                joblib.dump(vectorizer, 'vectorizer.pkl')
+                joblib.dump(scaler, 'scaler.pkl')
 
-            st.success(f"F1 Weighted (Grupo): {f1_weighted2:.2f}")
-            st.success("\nClassification Report (Grupo):")
-            st.success(classification_report(y2_test, y2_pred))
+                #print(df_B1)
 
+                #print(preprocesar_texto("Los niños estaban jugando en el parque y viendo qué sucedía a su alrededor."))
 
+                # Variables independientes (X) y dependientes (y)
+                X = df_B1.drop(columns=['TIEMPO_SOLUCION'])
+                y = df_B1['TIEMPO_SOLUCION']
 
-            joblib.dump(rf_model_GA, 'rf_model_GA.pkl', compress=2)
+                print(y)
+                # Dividir los datos en conjuntos de entrenamiento y prueba
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=17)
 
-#######################################################################################################################################################
+                # Crear el modelo de Random Forest
+                rf_model = RandomForestClassifier(
+                    n_estimators=100,  # Número de árboles
+                    max_depth=None,    # Profundidad máxima de los árboles (None para sin límite)
+                    random_state=17    # Reproducibilidad
+                )
 
-            #df_full = df_filt
+                # Entrenar el modelo
+                rf_model.fit(X_train, y_train)
 
-            df_B3 = pd.concat([df_full[['IMPACTO']], df_normalizado], axis=1)
+                # Realizar predicciones
+                y_pred = rf_model.predict(X_test)
 
+                # Evaluar el modelo
+                f1_macro = f1_score(y_test, y_pred, average='macro')  # Promedio ponderado
+                f1_weighted = f1_score(y_test, y_pred, average='weighted')  # Considerando clases desbalanceadas
 
-            #print(df_B1)
+                st.success(f"F1 Macro: {f1_macro:.2f}")
 
-            #print(preprocesar_texto("Los niños estaban jugando en el parque y viendo qué sucedía a su alrededor."))
+                st.success(f"F1 Weighted: {f1_weighted:.2f}")
+                st.success("\nClassification Report:")
+                st.success(classification_report(y_test, y_pred))
 
-            # Variables independientes (X) y dependientes (y)
-            X3 = df_B3.drop(columns=['IMPACTO'])
 
-            label_encoder_IM = LabelEncoder()
-            df_B3['IMPACTO'] = label_encoder_IM.fit_transform(df_B3['IMPACTO'])
-            joblib.dump(label_encoder_IM, 'label_encoder_IM.pkl')
+                # Matriz de confusión
+                cm = confusion_matrix(y_test, y_pred)
+                fig, ax = plt.subplots(figsize=(3, 3))  # Crear una figura para la matriz de confusión
+                disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=np.unique(y))
+                disp.plot(cmap=plt.cm.Blues, ax=ax, colorbar=False)
+                ax.set_title("Confusion Matrix")
 
-            y3 = df_B3['IMPACTO']
+                # Mostrar figura en Streamlit
+                st.pyplot(fig)
 
-            print(y)
-            # Dividir los datos en conjuntos de entrenamiento y prueba
-            X3_train, X3_test, y3_train, y3_test = train_test_split(X3, y3, test_size=0.1, random_state=27)
 
-            # Crear el modelo de Random Forest
-            rf_model_IM = RandomForestClassifier(
-                n_estimators=100,  # Número de árboles
-                max_depth=None,    # Profundidad máxima de los árboles (None para sin límite)
-                random_state=17    # Reproducibilidad
-            )
+                joblib.dump(rf_model, 'rf_model.pkl', compress=3)
 
-            # Entrenar el modelo
-            rf_model_IM.fit(X3_train, y3_train)
 
-            # Realizar predicciones
-            y3_pred = rf_model_IM.predict(X3_test)
 
-            # Evaluar el modelo
-            f1_macro3 = f1_score(y3_test, y3_pred, average='macro')  # Promedio ponderado
-            f1_weighted3 = f1_score(y3_test, y3_pred, average='weighted')  # Considerando clases desbalanceadas
+                svm_model = SVC(kernel='linear', random_state=42, C=0.8)
 
-            st.success(f"F1 Macro (Impacto): {f1_macro3:.2f}")
+                # Entrenar el modelo
+                svm_model.fit(X_train, y_train)
 
-            st.success(f"F1 Weighted (Impacto): {f1_weighted3:.2f}")
-            st.success("\nClassification Report (Impacto):")
-            st.success(classification_report(y3_test, y3_pred))
+                # Hacer predicciones
+                y_pred = svm_model.predict(X_test)
 
+                # Evaluar el modelo
 
-            joblib.dump(rf_model_IM, 'rf_model_IM.pkl', compress=2)
+                st.success(f"Accuracy Score: {accuracy_score(y_test, y_pred)}")
+                st.success(f"\nClassification Report:\n {classification_report(y_test, y_pred)}")
+                st.success(f"\nConfusion Matrix:\n {confusion_matrix(y_test, y_pred)}")
+                f1_macro = f1_score(y_test, y_pred, average='macro')  # Promedio ponderado
+                f1_weighted = f1_score(y_test, y_pred, average='weighted')  # Considerando clases desbalanceadas
+                st.success(f"F1 Macro: {f1_macro:.2f}")
+                st.success(f"F1 Weighted: {f1_weighted:.2f}")
 
-        else:
-            st.warning("Archivo no cargado")
+                joblib.dump(svm_model, 'svm_model.pkl', compress=3)
 
-        st.session_state.reinicio_archivo_re = True
 
-    if st.session_state.reinicio_archivo_re:
-        if st.button("Reiniciar"):
-            st.session_state.reinicio_archivo_re = False
-            st.session_state.archivo_re = ''
-            archivo_re = None  
-            st.rerun()
+
+
+
+
+
+                st.dataframe(df_full, use_container_width=True)
+
+            else:
+                st.warning("Archivo no cargado")
+
+            st.session_state.reinicio_archivo_re = True
+
+        if st.session_state.reinicio_archivo_re:
+            if st.button("Reiniciar"):
+                st.session_state.reinicio_archivo_re = False
+                st.session_state.archivo_re = ''
+                archivo_re = None  
+                st.rerun()
 
 
 if __name__ == '__main__':
