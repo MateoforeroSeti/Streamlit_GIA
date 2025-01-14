@@ -16,10 +16,10 @@ from unidecode import unidecode
 
 import joblib
 #paquetes de espanol 
-nltk.download('stopwords') 
-nltk.download('cess_esp') 
-nltk.download('punkt') 
-nltk.download('punkt_tab')
+#nltk.download('stopwords') 
+#nltk.download('cess_esp') 
+#nltk.download('punkt') 
+#nltk.download('punkt_tab')
 
 
 nlp = spacy.load("es_core_news_sm") 
@@ -72,8 +72,13 @@ def preprocesar_texto(texto):
 
 def main():
     model = joblib.load('rf_model.pkl')
+    model_GA = joblib.load('rf_model_GA.pkl')
+    model_IM = joblib.load('rf_model_IM.pkl')
     scaler = joblib.load('scaler.pkl')
     vectorizer = joblib.load('vectorizer.pkl')
+    label_encoder = joblib.load('label_encoder.pkl')
+    label_encoder_GA = joblib.load('label_encoder_GA.pkl')
+    label_encoder_IM = joblib.load('label_encoder_IM.pkl')
 
     st.set_page_config(layout='wide')
     st.title("Estimación de tiempos [GIA]")
@@ -93,7 +98,7 @@ def main():
         
     archivo_calculo = st.file_uploader("Carga de archivo CSV", type=["csv"])
 
-    if st.button('Estimar Tiempo de Solución', key="button_calc", type="primary"):
+    if st.button('Estimar Tiempo de Solución'):
 
         if archivo_calculo is not None:
             st.session_state.archivo_calculo = archivo_calculo
@@ -107,7 +112,20 @@ def main():
             
             df_normalizado = scaler.transform(df_titulos.select_dtypes(include=[float,int]))
             tiempo_calc = model.predict(df_normalizado)
-            datos_rf['Tiempo_estimado']=tiempo_calc
+            tiempo_calc_le = label_encoder.inverse_transform(tiempo_calc)
+
+            grupo_calc = model_GA.predict(df_normalizado)
+            grupo_calc_le = label_encoder_GA.inverse_transform(grupo_calc)
+
+            impacto_calc = model_IM.predict(df_normalizado)
+            impacto_calc_le = label_encoder_IM.inverse_transform(impacto_calc)
+
+
+
+            datos_rf['Tiempo_Estimado']=tiempo_calc_le
+            datos_rf['Grupo_Asignacion']=grupo_calc_le
+            datos_rf['Impacto']=impacto_calc_le
+
             #datos_filtrados['Tiempo_estimado']=datos_filtrados.groupby('K')['TIEMPO_SOLUCION'].transform(lambda x: int(x.mean()) if x.notna().any() else 450)
             #datos_filtrados.to_csv('resultado.csv',index=False,sep='|')
             csv = datos_rf.to_csv(index=False,sep=';')
@@ -127,16 +145,13 @@ def main():
 
 
         st.session_state.reinicio_archivo_calculo = True
-    
+
     if st.session_state.reinicio_archivo_calculo:
         if st.button("Reiniciar"):
             st.session_state.reinicio_archivo_calculo = False
             st.session_state.archivo_calculo = ''
             archivo_calculo = None  
             st.rerun()
-
-
-
 
 
 if __name__ == '__main__':
