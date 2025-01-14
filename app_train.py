@@ -13,25 +13,22 @@ from nltk.corpus import cess_esp
 
 from unidecode import unidecode 
 
-from datetime import datetime
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
+from sklearn.metrics import f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 
 import joblib
 #paquetes de espanol 
-nltk.download('stopwords') 
-nltk.download('cess_esp') 
-nltk.download('punkt') 
-nltk.download('punkt_tab')
+#nltk.download('stopwords') 
+#nltk.download('cess_esp') 
+#nltk.download('punkt') 
+#nltk.download('punkt_tab')
 
 
 nlp = spacy.load("es_core_news_sm") 
@@ -110,6 +107,7 @@ def main():
             df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
 
 
+
             titulos = df_full['TITULO']
 
             titulos_prepocesados = [preprocesar_texto(tit) for tit in titulos]
@@ -181,18 +179,9 @@ def main():
 
 
             joblib.dump(rf_model, 'rf_model.pkl', compress=2)
-
-
-                        
+                 
 #######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-
-          
-            df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
-
+  
             #df_full = df_filt
 
             df_B2 = pd.concat([df_full[['GRUPO_ASIGNACION']], df_normalizado], axis=1)
@@ -250,15 +239,7 @@ def main():
 
             joblib.dump(rf_model_GA, 'rf_model_GA.pkl', compress=2)
 
-
 #######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-#######################################################################################################################################################
-
-
-            df_full.to_csv('train_data.csv', encoding='utf-8', index=False, sep=';')
 
             #df_full = df_filt
 
