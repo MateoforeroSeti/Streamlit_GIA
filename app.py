@@ -16,10 +16,10 @@ from unidecode import unidecode
 
 import joblib
 #paquetes de espanol 
-#nltk.download('stopwords') 
-#nltk.download('cess_esp') 
-#nltk.download('punkt') 
-#nltk.download('punkt_tab')
+nltk.download('stopwords') 
+nltk.download('cess_esp') 
+nltk.download('punkt') 
+nltk.download('punkt_tab')
 
 
 nlp = spacy.load("es_core_news_sm") 
