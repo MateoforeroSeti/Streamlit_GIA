@@ -103,7 +103,7 @@ def main():
         if archivo_calculo is not None:
             st.session_state.archivo_calculo = archivo_calculo
 
-            df = pd.read_csv(archivo_calculo, encoding='utf-8', delimiter=',')     
+            df = pd.read_csv(archivo_calculo, encoding='utf-8', delimiter=';')     
             datos_rf = df
             titulos = datos_rf['Descripción'] 
             documentos_procesados = [preprocesar_texto(doc) for doc in titulos]
